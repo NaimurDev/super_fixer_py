@@ -1,0 +1,10 @@
+*# Ignore all .png and .jpg files anywhere in the project
+**/*.png
+**/*.jpg
+**/*.zip
+
+# Ignore env and venv directories anywhere in the project
+**/env/
+**/venv/
+PDF-MERGE/books/*
+PDF-MERGE/books_1/*
