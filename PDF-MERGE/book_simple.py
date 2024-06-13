@@ -3,6 +3,7 @@ import json
 from PIL import Image
 import pandas as pd
 from natsort import natsorted
+from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch, cm
 from reportlab.pdfgen import canvas
 import random
@@ -13,11 +14,14 @@ num_images = 100
 df = pd.read_csv(csv_file_path)
 all_usd_images = []
 book_no = 1
-size_increase = -1.7
+size_increase = -1
 
 # Set the size of the PDF page
-page_width = 8.625  # inches
-page_height = 11.25  # inches
+page_width, page_height = letter
+page_width /= inch  # convert to inches
+page_height /= inch  # convert to inches
+
+used_images = []
 
 # Function to resize the image while maintaining aspect ratio and adding 1 cm extra border
 def resize_image(image, max_width, max_height):
@@ -31,14 +35,12 @@ def resize_image(image, max_width, max_height):
         image = image.resize(new_size, Image.LANCZOS)
     return image
 
-def create_book(book_no, folder_and_used_data, folder_images, folder_names):
+def create_book(book_no, folder_images):
     image_added = 0
-    this_book_used_images = []
-    combined_images = []
-    selected_folder_indexes = []
-    selected_folder_names = []
-
-    random.shuffle(folder_names)
+    this_used_text = []
+    this_used_background = []
+    folder_names = random.shuffle(list(folder_images.keys()))
+    
     while image_added < num_images:
         for folder_name in folder_names:
             if folder_and_used_data[folder_name]['image_point'] < folder_and_used_data[folder_name]['length']:
@@ -62,7 +64,7 @@ def create_book(book_no, folder_and_used_data, folder_images, folder_names):
     os.makedirs(book_dir, exist_ok=True)
 
     output_pdf = f"{book_dir}/book.pdf"
-    c = canvas.Canvas(output_pdf, pagesize=(page_width * inch, page_height * inch))
+    c = canvas.Canvas(output_pdf, pagesize=letter)
 
     for i, img_path in enumerate(combined_images):
         img = Image.open(img_path).convert('RGB')
@@ -118,7 +120,7 @@ def main():
 
     directory_images = [os.path.join(directory, file) for file in os.listdir(directory) if file.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif'))]
     directory_images = natsorted(directory_images)
-
+    
     folder_images = {}
     for img in directory_images:
         folder_name = os.path.basename(img).split('_')[0]
@@ -126,13 +128,9 @@ def main():
             folder_images[folder_name] = []
         folder_images[folder_name].append(img)
     folder_images = {k: natsorted(v) for k, v in folder_images.items()}
-
-    folder_names = list(folder_images.keys())
-    folder_and_used_data = {folder_name: {'used_images': [], 'length': len(folder_images[folder_name]), 'image_point': 0} for folder_name in folder_names}
-
-    while any(data['image_point'] < data['length'] for data in folder_and_used_data.values()):
-        create_book(book_no, folder_and_used_data, folder_images, folder_names)
-        book_no += 1
+    
+    for i in range(0, 50):
+        create_book(i+1, folder_images)
 
 if __name__ == '__main__':
     main()
